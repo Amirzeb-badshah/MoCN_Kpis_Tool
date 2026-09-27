@@ -1,0 +1,15 @@
+# Database, uploaded Excel files and map tile cache -- customer data,
+# and far larger than GitHub allows (network_insight.db is ~5 GB).
+data/
+
+# Generated dashboard -- embeds the network data; rebuilt by src/build.py
+output/
+
+# Sample customer export and reference screenshots
+datamis/
+
+# Local environment / tooling
+.venv/
+__pycache__/
+*.pyc
+.claude/

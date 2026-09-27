@@ -1,0 +1,12 @@
+[project]
+name = "network-insight-app"
+version = "1.0.0"
+description = "LTE Network Insight dashboard — SQLite backend + static frontend"
+requires-python = ">=3.10"
+dependencies = [
+    "python-calamine>=0.3",
+    "flask>=3.0",
+]
+
+[tool.uv]
+package = false

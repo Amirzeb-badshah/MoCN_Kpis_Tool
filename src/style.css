@@ -1,0 +1,521 @@
+
+  :root{
+    /* "Aurora" light theme -- soft violet/cyan/pink backdrop, white glass
+       cards, electric-violet accent. Chart text/grid colors are tokens
+       too (--chart-*) since the SVG charts are drawn in app.js. */
+    --bg:#f5f3ff;--panel:#ffffff;--panel2:#f4f2fc;--line:#e5e1f5;
+    --ink:#1e1b3a;--dim:#5b5781;--faint:#8e8aad;
+    --accent:#6d4aff;--accent2:#c13cff;--accent3:#ff4d9d;
+    --good:#10b981;--warn:#f59e0b;--bad:#ef4444;--purple:#a855f7;
+    --grad:linear-gradient(120deg,#6d4aff 0%,#c13cff 55%,#ff4d9d 100%);
+    --shadow:0 1px 2px rgba(60,40,140,.06),0 10px 30px -14px rgba(76,54,160,.28);
+    --chart-ink:#2a2650;--chart-ink2:#4b4770;--chart-grid:#ece9f7;--chart-rule:#d6d1ea;
+    --mono:"JetBrains Mono","SF Mono","Roboto Mono",ui-monospace,Menlo,monospace;
+    --sans:"Plus Jakarta Sans","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  /* Generic hide utility. Several elements (.chart-modal, .dlbtn,
+     .geo-map-controls, section, .cpbody, ...) previously had their OWN
+     scoped ".X.hidden{display:none}" rule, each added piecemeal whenever
+     something new needed to toggle visibility -- easy to forget one (and
+     it silently does nothing when forgotten, since a bare class with no
+     matching rule has zero effect). All of those were already just
+     display:none with nothing element-specific about them, so this
+     covers every element going forward without needing a new rule per
+     tag/class each time. !important because plenty of elements combine
+     .hidden with another class that sets its own display (.tstrip's
+     display:flex, for one) -- equal specificity means whichever rule is
+     declared LATER in this file wins on a plain ".hidden{display:none}",
+     regardless of which element actually has it, which is exactly the
+     kind of silent-not-actually-hidden bug this rule exists to prevent
+     in the first place. */
+  .hidden{display:none!important}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:70px}
+  .wrap{max-width:1320px;margin:0 auto;padding:0 22px}
+  header{border-bottom:1px solid var(--line);background:rgba(255,255,255,.72);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);padding:20px 0 0;position:sticky;top:0;z-index:20}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+  h1{font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .sub{color:var(--dim);margin-top:4px;font-size:12.5px}
+  /* global date/hour selector */
+  .controls{display:flex;gap:14px;align-items:center;margin-top:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+  .controls label{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+  .ctl{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 11px;font-family:var(--mono);font-size:12.5px;cursor:pointer}
+  .ctl-note{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  .dlbtn{background:var(--good);color:#fff;border:none;border-radius:7px;padding:9px 15px;font-family:var(--sans);font-weight:650;font-size:13px;cursor:pointer;margin-left:auto}
+  .dlbtn:hover{filter:brightness(1.08)}
+  .dlbtn.hidden{display:none}
+  /* per-tab time control strip */
+  .tstrip{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 13px;margin-bottom:16px}
+  .tstrip label{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-right:5px}
+  .tstrip .ctl{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:12px;cursor:pointer}
+  .tstrip .scope{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(109,74,255,.1);border:1px solid rgba(109,74,255,.25);border-radius:20px;padding:4px 11px}
+  .tstrip .scope.fixed{color:var(--warn);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25)}
+  .tstrip .grp{display:flex;align-items:center;gap:4px}
+  .tstrip .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+  .tabs{display:flex;gap:2px;margin-top:14px;flex-wrap:wrap}
+  .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:var(--sans);font-size:13px;font-weight:600;padding:10px 13px;cursor:pointer;letter-spacing:-.01em}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .view{display:none}.view.active{display:block}
+  section{margin-top:26px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:13px}
+  .sec-num{font-family:var(--mono);font-size:12px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:2px 7px}
+  h2{font-size:17px;font-weight:650;letter-spacing:-.01em}
+  .sec-sub{color:var(--dim);font-size:12px;margin-left:auto;max-width:400px;text-align:right}
+  .grid{display:grid;gap:12px}.c2{grid-template-columns:repeat(2,1fr)}.c3{grid-template-columns:repeat(3,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:15px}
+  .k-lbl{font-size:11px;color:var(--dim);letter-spacing:.03em;text-transform:uppercase}
+  .k-val{font-size:22px;font-weight:700;margin-top:4px;font-family:var(--mono);letter-spacing:-.02em}
+  .k-val small{font-size:12px;color:var(--faint);font-weight:500}
+  .k-sub{font-size:10.5px;font-family:var(--mono);margin-top:3px}
+  .up{color:var(--good)}.down{color:var(--bad)}.flat{color:var(--faint)}
+  .dot{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:middle}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+  .pill.good{background:rgba(16,185,129,.14);color:var(--good)}
+  .pill.warn{background:rgba(245,158,11,.15);color:var(--warn)}
+  .pill.bad{background:rgba(239,68,68,.15);color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  .tbl-wrap{overflow:auto;max-height:440px;border:1px solid var(--line);border-radius:8px}
+  thead th{position:sticky;top:0;text-align:left;padding:9px 11px;background:var(--panel2);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--line);white-space:nowrap;z-index:2}
+  tbody td{padding:8px 11px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr{cursor:pointer}
+  tbody tr:hover td{background:var(--panel2)}
+  tbody tr.sel td{background:rgba(109,74,255,.12)}
+  .cid{color:var(--ink);font-weight:600}
+  .vb{color:var(--bad);font-weight:600}.vw{color:var(--warn);font-weight:600}.vg{color:var(--good)}
+  .drill{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:16px;margin-top:14px}
+  .drill-h{font-family:var(--mono);font-size:12px;color:var(--accent);margin-bottom:12px}
+  .radio-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .rbtn{background:var(--panel);border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:12px;padding:7px 13px;border-radius:20px;cursor:pointer}
+  .rbtn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .lsel{background:var(--panel);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:12px;padding:7px 11px;border-radius:6px;cursor:pointer}
+  .geomap{position:relative;width:100%;height:440px;background:radial-gradient(circle at 50% 45%,#ffffff,#f1eefc);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:6px}
+  .geo-legend{display:flex;gap:16px;margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--dim);flex-wrap:wrap}
+  .insight{background:var(--panel2);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:12px 15px;margin-top:12px;font-size:13px}
+  .insight b{color:var(--accent);font-weight:600}
+  .insight.warn{border-left-color:var(--warn)}.insight.warn b{color:var(--warn)}
+  .insight.bad{border-left-color:var(--bad)}.insight.bad b{color:var(--bad)}
+  .insight .lead{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:4px}
+  .foot{color:var(--faint);font-size:11px;font-family:var(--mono);margin-top:10px}
+  .banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--warn);font-size:12px;font-family:var(--mono);padding:7px 14px;border-radius:6px;margin:14px 0;text-align:center}
+  /* stacked bars for layer charts */
+  .sbar-row{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:12px;padding:7px 0}
+  .sbar-lbl{font-family:var(--mono);font-weight:600;font-size:12px}
+  .sbar{display:flex;height:22px;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .sseg{display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:#1e1b3a;font-weight:600}
+  .hbar-row{display:grid;grid-template-columns:70px 1fr 54px 80px;align-items:center;gap:10px;padding:6px 0}
+  .hbar-track{height:20px;background:var(--panel2);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .hbar-fill{height:100%;border-radius:3px 0 0 3px}
+  .legend{display:flex;gap:16px;margin-top:9px;font-size:11px;color:var(--dim);font-family:var(--mono)}
+  .cmplbl{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin:2px 0 4px}
+  #cqiPaired .prow,#prbPaired .prow,#modPaired .prow,#ulPaired .prow{padding:5px 0}
+  #cqiPaired .sbar,#prbPaired .sbar,#modPaired .sbar{height:18px}
+  /* LayerWise Pre/Current paired bars (image style) */
+  .prow{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .prow:last-child{border-bottom:none}
+  .prow .pll{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--ink)}
+  .pbars{display:flex;flex-direction:column;gap:5px}
+  .pbrow{display:grid;grid-template-columns:58px 1fr;align-items:center;gap:8px}
+  .pbrow .ptag{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+  .prow .sbar{height:20px}
+  /* wide hourly rejection bars */
+  .rejwrap{display:flex;align-items:flex-end;gap:3px;height:150px;padding-top:8px}
+  .rejhour{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .rejbars{display:flex;align-items:flex-end;gap:1px;height:130px;width:100%}
+  .rejbars span{flex:1;border-radius:1px 1px 0 0}
+  .rejhour small{font-size:8px;color:var(--faint);font-family:var(--mono)}
+  /* last-5-hours rejection grouped bars */
+  .rejwrap5{display:flex;gap:24px;height:190px;align-items:flex-end;padding:10px 8px 0}
+  .rejhour5{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .rbars{display:flex;align-items:flex-end;gap:10px;height:150px;width:100%;justify-content:center}
+  .rb{width:34px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px}
+  .rbfill{width:100%;border-radius:3px 3px 0 0;min-height:2px}
+  .rbv{font-family:var(--mono);font-size:9.5px;color:var(--ink)}
+  .rhlab{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:600;border-top:1px solid var(--line);padding-top:5px;width:100%;text-align:center}
+  /* overshoot 5-color banded rows */
+  .osgridhead,.osgrid{display:grid;grid-template-columns:64px repeat(5,1fr);gap:4px;align-items:stretch}
+  .osgridhead{margin-bottom:5px}
+  .oshcap{font-family:var(--mono);font-size:9.5px;color:var(--faint);text-align:center}
+  .osgrid{margin-bottom:4px}
+  .oslab{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--ink);display:flex;align-items:center}
+  .oscell{height:34px;border-radius:3px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.25)}
+  .oscell span{font-family:var(--mono);font-size:11px;font-weight:600;color:rgba(0,0,0,.72)}
+  /* beautiful map */
+  .mapbox{position:relative;width:100%;height:420px;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:6px;background:var(--panel2)}
+  .maptiles{position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(109,74,255,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(109,74,255,.05) 1px,transparent 1px),
+      radial-gradient(circle at 30% 40%,rgba(109,74,255,.08),transparent 45%),
+      radial-gradient(circle at 70% 65%,rgba(168,85,247,.07),transparent 45%);
+    background-size:40px 40px,40px 40px,100% 100%,100% 100%;}
+  .maptiles::after{content:"";position:absolute;inset:0;
+    background:
+      linear-gradient(115deg,transparent 40%,rgba(109,74,255,.06) 41%,rgba(109,74,255,.06) 43%,transparent 44%),
+      linear-gradient(200deg,transparent 55%,rgba(120,140,160,.05) 56%,rgba(120,140,160,.05) 58%,transparent 59%);}
+  .mapbadge{position:absolute;bottom:10px;right:12px;font-family:var(--mono);font-size:10px;color:var(--dim);background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:5px;padding:4px 9px}
+  .maproads{position:absolute;inset:0;pointer-events:none}
+  /* major KPI line charts */
+  .lc{padding:14px 16px 10px}
+  .lc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+  .lc-title{font-weight:650;font-size:13.5px;letter-spacing:-.01em}
+  .lc-unit{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+  /* collapsible panel */
+  .cpanel{border:1px solid var(--line);border-radius:8px;margin-bottom:14px;overflow:hidden}
+  .cphead{display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--panel);cursor:pointer;user-select:none}
+  .cphead h3{font-size:14px;font-weight:650;margin:0}
+  .cphead .chev{margin-left:auto;font-family:var(--mono);color:var(--faint);transition:transform .2s}
+  .cphead.collapsed .chev{transform:rotate(-90deg)}
+  .cpbody{padding:14px 16px;background:var(--bg)}
+  .cpbody.hidden{display:none}
+  section.hidden{display:none}
+  .clickable-row{cursor:pointer}
+  .clickable-row:hover td{background:var(--panel2)}
+  .clickable-row.sel-row td{background:rgba(109,74,255,0.14)}
+  .clickable-row.sel-row td.site,.clickable-row.sel-row td.sec{background:rgba(109,74,255,0.22)}
+  .catchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{background:var(--panel);border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:11.5px;padding:6px 12px;border-radius:20px;cursor:pointer}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .chip .n{opacity:.75;margin-left:5px}
+  .spark{margin-top:7px;display:block}
+  .matrix td.site{font-weight:700;color:var(--ink);background:var(--panel2);vertical-align:middle}
+  .matrix td.sec{font-weight:600;color:var(--ink)}
+  .pc{font-weight:600;text-align:center;border-radius:3px}
+  .mini-charts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:900px){.c4{grid-template-columns:repeat(2,1fr)}.c2,.c3{grid-template-columns:1fr}.sec-sub{display:none}.mini-charts{grid-template-columns:1fr}}
+
+  /* ---- drag-to-zoom line charts ---- */
+  .zchart{position:relative;user-select:none}
+  .zchart svg{cursor:crosshair}
+  .zoom-band{position:absolute;background:rgba(109,74,255,.18);border-left:1px solid var(--accent);border-right:1px solid var(--accent);pointer-events:none;z-index:5}
+  .zoom-reset{position:absolute;top:10px;right:10px;background:var(--panel2);color:var(--accent);border:1px solid var(--accent);border-radius:20px;font-family:var(--mono);font-size:10px;padding:4px 10px;cursor:pointer;z-index:6}
+  .zoom-reset:hover{background:var(--accent);color:#fff}
+
+  /* ---- dual-handle hour range slider ---- */
+  .range-slider-wrap{display:flex;align-items:center;gap:10px;min-width:220px}
+  .range-slider{position:relative;flex:1;min-width:140px;height:24px}
+  .range-slider .rs-track{position:absolute;left:0;right:0;top:10px;height:4px;background:var(--panel2);border-radius:2px}
+  .range-slider .rs-fill{position:absolute;top:10px;height:4px;background:var(--accent);border-radius:2px}
+  .range-slider input[type=range]{position:absolute;left:0;top:6px;width:100%;height:12px;margin:0;background:transparent;pointer-events:none;-webkit-appearance:none;appearance:none}
+  .range-slider input[type=range]::-webkit-slider-runnable-track{background:transparent;height:12px}
+  .range-slider input[type=range]::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer;margin-top:-1px}
+  .range-slider input[type=range]::-moz-range-track{background:transparent;height:12px}
+  .range-slider input[type=range]::-moz-range-thumb{pointer-events:auto;width:10px;height:10px;border-radius:50%;background:var(--ink);border:2px solid var(--accent);cursor:pointer}
+  .rs-label{font-family:var(--mono);font-size:11.5px;color:var(--dim);white-space:nowrap}
+
+  /* ---- LayerWise Analysis: single aggregated bar per band (replaces the
+     old Pre/Post pair), styled for a polished, presentation-ready look:
+     glossy top-highlight sheen, soft shadow, rounded ends, smooth
+     width transitions when the range changes. ---- */
+  .pbar-row{display:grid;grid-template-columns:74px 1fr;align-items:center;gap:16px;padding:11px 0}
+  .pbar-row:not(:last-child){border-bottom:1px solid var(--line)}
+  .pbar-lbl{font-family:var(--mono);font-weight:700;font-size:13.5px;color:var(--ink);letter-spacing:-.01em}
+  .pbar-track{display:flex;height:30px;border-radius:9px;overflow:hidden;background:var(--panel2);box-shadow:inset 0 1px 3px rgba(76,54,160,.14);border:1px solid var(--line)}
+  .pbar-seg{position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:rgba(0,0,0,.72);overflow:hidden;transition:width .5s cubic-bezier(.22,.9,.32,1);white-space:nowrap}
+  .pbar-seg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0) 58%)}
+  .pbar-seg span{position:relative;z-index:1}
+  .pbar-gauge-row{display:grid;grid-template-columns:74px 1fr 78px;align-items:center;gap:16px;padding:11px 0}
+  .pbar-gauge-row:not(:last-child){border-bottom:1px solid var(--line)}
+  .pbar-gauge-track{position:relative;height:14px;border-radius:8px;background:linear-gradient(90deg,var(--good),var(--warn) 62%,var(--bad));box-shadow:inset 0 1px 2px rgba(0,0,0,.3);border:1px solid var(--line)}
+  .pbar-gauge-marker{position:absolute;top:-4px;width:4px;height:22px;border-radius:2px;background:var(--ink);box-shadow:0 0 0 2px rgba(0,0,0,.4),0 0 8px rgba(255,255,255,.5);transform:translateX(-50%);transition:left .5s cubic-bezier(.22,.9,.32,1)}
+  .pbar-gauge-val{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink);text-align:right}
+  .agg-scope{font-family:var(--mono);font-size:11px;color:var(--faint);margin:-2px 0 12px}
+
+  /* ---- Collapsible header + per-tab filter panels: reuses the existing
+     .cpanel/.cphead/.cpbody + togglePanel() component (already used for
+     Zero-Traffic/Degraded Cells) so the header and every tab's From/To/
+     Hours controls can be tucked away when not needed, freeing up screen
+     space, without introducing a second toggle mechanism. ---- */
+  .hdrhead{background:transparent;padding:6px 0 14px;justify-content:space-between;border-radius:0}
+  .hdrhead .eyebrow{margin-bottom:4px}
+  .hdrhead h1{margin:0}
+  .hdrhead .chev{font-size:20px;color:var(--faint);flex-shrink:0;transition:transform .2s}
+  .hdrbody{background:transparent;padding:0}
+  .hdrbody.hidden{display:none}
+  .filter-panel{margin-bottom:16px}
+  .filter-panel .cphead{padding:9px 14px;background:var(--panel)}
+  .filter-panel .cphead h3{font-size:12.5px;font-weight:650;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin:0}
+  .filter-panel .cpbody{padding:10px}
+  .filter-panel .cpbody .tstrip{margin-bottom:0}
+
+  /* ---- Major KPIs: Data & Voice Utilization by Band (full-width,
+     grouped/stacked bars for the last 5 hours of the latest day) ---- */
+  /* Side by side (not stacked) -- this halves the vertical footprint
+     versus two full-width charts stacked on top of each other, and gives
+     each chart a naturally narrower width for free instead of an
+     artificial max-width cap. */
+  .bigchart-stack{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .bigchart-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px 16px;box-shadow:0 10px 32px rgba(76,54,160,.16)}
+  @media(max-width:900px){.bigchart-stack{grid-template-columns:1fr}}
+  .bigchart-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .bigchart-title{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .bigchart-unit{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
+  .bl-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+  .bl-chip{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-family:var(--mono);flex:1;min-width:108px}
+  .bl-chip .dot{width:11px;height:11px;border-radius:3px;margin:0;box-shadow:0 0 8px currentColor}
+  .bl-chip .bl-name{font-size:12px;color:var(--dim);margin-right:auto}
+  .bl-chip .bl-pct{font-size:15px;font-weight:800;color:var(--ink)}
+  .bl-chip .bl-pct.dual{font-size:11.5px}
+  .dirswatch{width:14px;height:14px;border-radius:3px;display:inline-block;background:#6b7787;flex-shrink:0}
+  .dirswatch.dirhatch{background-image:repeating-linear-gradient(45deg,rgba(14,17,23,.55) 0 2px,transparent 2px 5px)}
+
+  /* ---- L2600 Overshoot Analysis: horizontal 100%-stacked distance bar ---- */
+  .ov-bar{display:flex;height:56px;border-radius:12px;overflow:hidden;border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  .ov-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-family:var(--mono);text-shadow:0 1px 3px rgba(0,0,0,.6);transition:width .3s ease;min-width:0;overflow:hidden;white-space:nowrap}
+
+  /* ---- Site KPIs tab: multi-cell charts, legend toggles, maximize modal ----
+     Redesigned per direct customer feedback ("ugly", "gap between legend
+     and chart", "dislike the color dot"): .mc-card previously had no
+     background/border/shadow at all (every other card-style component in
+     this app does) -- it was rendering as a bare, frameless SVG floating
+     on the page background, which is very likely most of what read as
+     "ugly". Fixed by giving it the same treatment as .bigchart-card.
+     Round 3 of feedback: even a plain-text legend below the chart, one
+     line per series, ate into chart height and didn't scan well against
+     many series. Moved to a plain vertical list to the RIGHT of the
+     chart instead (.mc-body is the flex row; .mc-chart-col / .mc-legend-
+     col are its two children) -- no pill/box around each row at all, just
+     a short line-segment swatch + text, "Show All" / "Deselect All" as
+     plain text controls (not buttons), and hovering a row or a data point
+     in the chart itself highlights that one line (dims the rest). */
+  .mc-card{padding:16px 18px 14px;position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(76,54,160,.16)}
+  /* Site-name badge, above the chart title -- was 10px monospace colored
+     text sitting loose in the corner, easy to miss entirely. Now a real
+     badge: the app's sans-serif display font (not mono, which reads as
+     technical/small at this weight), bigger, bright white-on-accent-tint
+     with its own border and background so it reads as a distinct label,
+     not just another line of text. */
+  .mc-site{display:inline-flex;align-items:center;max-width:100%;font-family:var(--sans);font-size:12.5px;font-weight:800;color:var(--accent);letter-spacing:-.005em;background:linear-gradient(135deg,rgba(109,74,255,.28),rgba(109,74,255,.1));border:1px solid rgba(109,74,255,.55);border-radius:6px;padding:4px 10px;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 0 0 1px rgba(109,74,255,.08) inset}
+  .mc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px}
+  .mc-title{font-weight:650;font-size:13.5px;letter-spacing:-.01em}
+  .mc-unit{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-right:auto;margin-left:8px}
+  .mc-max-btn{background:var(--panel2);border:1px solid var(--line);color:var(--dim);border-radius:6px;width:26px;height:26px;font-size:13px;cursor:pointer;flex-shrink:0;line-height:1}
+  .mc-max-btn:hover{color:var(--accent);border-color:var(--accent)}
+  .mc-body{display:flex;gap:16px;align-items:flex-start}
+  .mc-chart-col{flex:1;min-width:0}
+  .mc-legend-col{width:152px;flex-shrink:0;display:flex;flex-direction:column;max-height:300px}
+  .mc-legend-ctl{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:8px;flex-shrink:0}
+  .mc-lctl{cursor:pointer}
+  .mc-lctl:hover{color:var(--accent);text-decoration:underline}
+  .mc-lctl-sep{color:var(--line)}
+  .mc-legend-list{overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+  .mc-lrow{display:flex;align-items:center;gap:7px;padding:3.5px 5px;font-family:var(--mono);font-size:11px;color:var(--ink);cursor:pointer;user-select:none;border-radius:4px;transition:background .12s,opacity .12s}
+  .mc-lrow:hover{background:var(--panel2)}
+  .mc-lrow.off{opacity:.4}
+  .mc-lrow .mc-lineswatch{flex-shrink:0}
+  @media(max-width:640px){ .mc-body{flex-direction:column} .mc-legend-col{width:100%;max-height:none} }
+  .mc-line{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:opacity .15s,stroke-width .15s}
+  .mc-line.hidden-line{opacity:0;pointer-events:none}
+  .mc-line.mc-dimmed{opacity:.15}
+  .mc-line.mc-solo{stroke-width:3.2}
+  .mc-dot{transition:opacity .15s}
+  .mc-dot.hidden-line{opacity:0}
+  .mc-dot.mc-dimmed{opacity:.15}
+  .mc-tooltip{position:fixed;z-index:300;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;box-shadow:0 10px 28px rgba(76,54,160,.16);font-family:var(--mono)}
+  .mc-tooltip.hidden{display:none}
+  .mc-tip-label{font-size:11px;font-weight:700;margin-bottom:3px;white-space:nowrap}
+  .mc-tip-val{font-size:15px;font-weight:800;color:var(--ink);white-space:nowrap}
+  .mc-tip-unit{font-size:9.5px;color:var(--faint);text-transform:uppercase}
+  .mc-tip-time{font-size:9.5px;color:var(--faint);margin-top:3px;white-space:nowrap}
+
+  /* ---- Geo Analysis: site map, per-band sector wedges ---- */
+  /* z-index:1 (any explicit value) makes this its own stacking context, so
+     the map's internal overlay z-indices below (legend/controls/tip, all
+     the way up to .geo-map-tip's 1200) are contained INSIDE it and can
+     never leak out to paint over an unrelated later part of the page --
+     e.g. the #geoSiteChartsModal/#chartModal that opens on top of the map
+     when a wedge is clicked. Without this, position:relative alone does
+     NOT create a stacking context, so those z-indices would compete
+     directly against the modal's, at the document root level. */
+  .geo-map-wrap{position:relative;z-index:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;height:min(88vh,900px);box-shadow:0 8px 24px rgba(76,54,160,.16)}
+  /* Inside the "bigger display" modal, fill whatever room the modal gives
+     it instead of the normal-view height above. */
+  #geoMapModalBody .geo-map-wrap{height:100%}
+  .geo-map-modal .geo-map-modal-content{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;width:97vw;height:94vh;box-shadow:0 24px 64px rgba(76,54,160,.16)}
+  /* These 3 modals can nest -- click a wedge in the "bigger display" map
+     modal (#geoMapModal) to open the site KPI charts (#geoSiteChartsModal)
+     on top of it, then click "enlarge" on one of those charts to open the
+     shared single-chart modal (#chartModal) on top of THAT. All 3 share
+     .chart-modal's z-index:200 by default, which only works for whichever
+     one happens to be LATEST in the DOM -- explicit tiers here make the
+     nesting order correct regardless of DOM position or which combination
+     is actually open. */
+  #geoMapModal{z-index:200}
+  #geoSiteChartsModal{z-index:210}
+  #chartModal{z-index:220}
+  #geoMapModalBody{width:100%;height:100%}
+  .geo-leaflet-map{position:absolute;z-index:1;inset:0;width:100%;height:100%;background:var(--panel2)}
+  /* Tile filter over the (bright, daylight) OSM raster tiles so they
+     sit visually with the rest of this dark-themed app. */
+  .geo-dark-tiles{filter:saturate(.8) brightness(1.02)}
+  .leaflet-control-attribution{background:rgba(255,255,255,.85) !important;color:var(--faint) !important;font-family:var(--mono);font-size:9.5px !important;line-height:1.4}
+  .leaflet-control-attribution a{color:var(--accent) !important}
+  /* Overlay SVG sits on top of the Leaflet map, same pixel space
+     (latLngToContainerPoint). pointer-events:none lets drag/wheel fall
+     through to Leaflet everywhere except the markers themselves. */
+  .geo-map-svg{position:absolute;z-index:2;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+  .geo-site-dot{fill:#8b98a8;stroke:#fff;stroke-width:.6px;cursor:pointer;pointer-events:auto}
+  .geo-wedge{stroke:#fff;stroke-width:.4px;cursor:pointer;transition:opacity .12s;pointer-events:auto}
+  .geo-wedge:hover{opacity:1;filter:brightness(1.35)}
+  .geo-wedge.dimmed{opacity:.12}
+  .geo-map-tip{position:fixed;z-index:1200;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px;box-shadow:0 10px 28px rgba(76,54,160,.16);font-family:var(--mono);font-size:11.5px;max-width:280px}
+  .geo-map-tip.hidden{display:none}
+  .geo-map-tip .t-site{font-weight:800;color:var(--ink);margin-bottom:4px;font-family:var(--sans);font-size:12.5px}
+  .geo-map-tip .t-row{display:flex;justify-content:space-between;gap:14px;padding:1px 0}
+  .geo-map-tip .t-row .k{color:var(--faint)}
+  .geo-map-legend{position:absolute;z-index:1100;left:14px;top:14px;display:flex;flex-direction:column;gap:5px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:9px;padding:9px 12px;backdrop-filter:blur(3px)}
+  .geo-map-legend .row{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .geo-map-legend .sw{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .geo-map-controls{position:absolute;z-index:1100;right:14px;top:14px;display:flex;flex-direction:column;gap:6px}
+  .geo-map-controls.hidden{display:none}
+  .geo-map-controls button{width:30px;height:30px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:6px;font-size:16px;font-weight:700;cursor:pointer;line-height:1}
+  .geo-map-controls button:hover{border-color:var(--accent);color:var(--accent)}
+  .geo-band-chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;user-select:none;margin-right:6px;transition:opacity .15s}
+  .geo-band-chip .sw{width:9px;height:9px;border-radius:3px}
+  .geo-band-chip.off{opacity:.35}
+
+  /* ---- Geo Analysis: "Color by" mode segmented control ---- */
+  .geo-mode-toggles{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+  .geo-mode-btn{font-family:var(--mono);font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;border:none;background:transparent;color:var(--dim);cursor:pointer;transition:background .15s,color .15s;white-space:nowrap}
+  .geo-mode-btn:hover{color:var(--ink)}
+  .geo-mode-btn.active{background:var(--accent);color:#fff}
+  .geo-mode-btn .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  /* Congestion-mode gradient legend bar: 4 fixed-width severity swatches
+     with their threshold label, used instead of the per-band swatch list
+     when a PRB/throughput color mode is active. */
+  .geo-legend-grad{display:flex;flex-direction:column;gap:4px}
+  .geo-legend-grad .row{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .geo-legend-grad .sw{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .geo-legend-grad .n{margin-left:auto;color:var(--faint)}
+  .geo-wedge.geo-nodata{fill:#c9c4dc !important;opacity:.45}
+  .chart-modal{position:fixed;inset:0;background:rgba(30,20,70,.42);z-index:200;display:flex;align-items:center;justify-content:center;padding:30px;backdrop-filter:blur(6px)}
+  .chart-modal.hidden{display:none}
+  /* width (not just max-width) is required here: .chart-modal-content is a
+     flex item of .chart-modal with align-items:center (not stretch), so
+     without an explicit width it shrinks-to-fit its content instead of
+     filling the available space. The chart svg inside is width:100% of
+     this box -- with no definite width to resolve against, it was
+     silently falling back to the browser's default replaced-element size
+     (300x150px), which is what rendered as a "very small snap" when
+     enlarging. Also widened per feedback (980px -> 1220px) for a roomier
+     enlarged view. */
+  .chart-modal-content{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:min(1220px,94vw);max-height:90vh;overflow:auto;box-shadow:0 24px 64px rgba(76,54,160,.16)}
+  .chart-modal-close{position:absolute;top:12px;right:12px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);border-radius:50%;width:30px;height:30px;font-size:18px;cursor:pointer;line-height:1}
+  .chart-modal-close:hover{color:var(--bad);border-color:var(--bad)}
+
+  /* ---- MLB_SRVCC_CA hover flyout: shown to the RIGHT of the card, pure
+     CSS :hover (no JS wiring to go wrong) -- .expand-chart is a DOM child
+     of .msc-card, so hovering it (even though it's positioned outside the
+     card's own box) keeps .msc-card:hover true and the panel open. The
+     3rd grid column has no room to its right, so it flips to the left. ---- */
+  .msc-card{position:relative}
+  .expand-chart{display:none;position:absolute;top:0;left:100%;margin-left:12px;width:400px;z-index:50;filter:drop-shadow(0 8px 24px rgba(76,54,160,.22))}
+  .msc-card:hover .expand-chart{display:block}
+  .msc-card:nth-child(3n) .expand-chart{left:auto;right:100%;margin-left:0;margin-right:12px}
+  @media(max-width:900px){.expand-chart{position:fixed;left:50%!important;right:auto!important;top:50%!important;margin:0!important;transform:translate(-50%,-50%);max-width:92vw}}
+
+
+  /* =====================================================================
+     Aurora theme polish + new components (enlarge, delete dialog,
+     degraded-cell thresholds, empty state)
+     ===================================================================== */
+  body{background:
+      radial-gradient(900px 600px at 8% -5%,rgba(109,74,255,.20),transparent 60%),
+      radial-gradient(800px 560px at 100% 0%,rgba(34,211,238,.18),transparent 60%),
+      radial-gradient(900px 700px at 85% 100%,rgba(255,77,157,.14),transparent 60%),
+      radial-gradient(700px 520px at 0% 100%,rgba(16,185,129,.10),transparent 60%),
+      var(--bg);
+    background-attachment:fixed}
+  header{border-bottom:1px solid rgba(109,74,255,.14);box-shadow:0 6px 24px -18px rgba(76,54,160,.5)}
+  h1{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800;font-size:26px}
+  .eyebrow{font-weight:700}
+  .card,.bigchart-card,.mc-card,.msc-card,.cpanel,.tbl-wrap,.geo-map-wrap{box-shadow:var(--shadow);border-color:var(--line)}
+  .card,.msc-card{border-radius:14px}
+  .bigchart-card,.mc-card{border-radius:16px}
+  .cpanel{border-radius:14px;background:var(--panel)}
+  .cpbody{background:transparent}
+  .controls,.tstrip{background:rgba(255,255,255,.7);border-color:var(--line);border-radius:12px}
+  .ctl,.tstrip .ctl,.lsel{background:#fff;border-color:var(--line);color:var(--ink)}
+  .ctl:focus,.lsel:focus,input.ctl:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,74,255,.15)}
+  .sec-num{background:var(--grad);color:#fff;border:none;font-weight:700;border-radius:6px}
+  h2{font-weight:750;color:var(--ink)}
+  .tab{color:var(--dim);border-radius:8px 8px 0 0;transition:color .15s,background .15s}
+  .tab:hover{background:rgba(109,74,255,.06)}
+  .tab.active{color:var(--accent);border-bottom:none;background:rgba(109,74,255,.08);box-shadow:inset 0 -3px 0 0 var(--accent)}
+  .dlbtn{background:var(--grad);color:#fff;box-shadow:0 6px 16px -6px rgba(193,60,255,.55);border-radius:10px}
+  .dlbtn.upbtn.geobtn{background:linear-gradient(120deg,#0ea5e9,#6d4aff)}
+  .dlbtn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .delbtn{border-radius:10px;box-shadow:0 6px 16px -8px rgba(239,68,68,.6)}
+  /* Table headers: readable sans at 12px in ink color -- was 10px faint
+     monospace caps, hard to read on the light theme. */
+  thead th{background:#f3f0ff;color:var(--chart-ink);font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.01em;text-transform:none;padding:10px 12px;border-bottom:2px solid rgba(109,74,255,.18)}
+  tbody tr:hover td{background:rgba(109,74,255,.05)}
+  .chip.active,.rbtn.active{background:var(--grad);border-color:transparent;color:#fff}
+  .insight{background:#fff;box-shadow:var(--shadow)}
+  .range-slider input[type=range]::-webkit-slider-thumb{background:#fff}
+  .range-slider input[type=range]::-moz-range-thumb{background:#fff}
+  .range-slider .rs-fill{background:var(--grad)}
+  .chart-modal-content,.geo-map-modal .geo-map-modal-content{border-radius:18px;box-shadow:0 30px 80px -20px rgba(40,20,110,.45)}
+  .mc-tooltip,.geo-map-tip{box-shadow:0 12px 30px -10px rgba(76,54,160,.35)}
+  ::selection{background:rgba(109,74,255,.2)}
+
+  /* ---- enlarge button + enlarged view ---- */
+  .enl-card{position:relative}
+  .enlarge-btn{background:#fff;border:1px solid var(--line);color:var(--dim);border-radius:8px;width:28px;height:28px;font-size:13px;line-height:1;cursor:pointer;flex-shrink:0;transition:color .15s,border-color .15s,box-shadow .15s}
+  .enlarge-btn:hover{color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,74,255,.12)}
+  .card.enl-card > .enlarge-btn{position:absolute;top:12px;right:12px;z-index:2}
+  .lc-head .enlarge-btn,.bigchart-head .enlarge-btn{margin-left:10px;align-self:center}
+  .lc-head .lc-unit,.bigchart-head .bigchart-unit{margin-left:auto}
+  .enlarge-title{font-size:18px;font-weight:800;margin:0 40px 14px 2px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .enlarge-view > *{box-shadow:none;border:none;padding:0;margin:0}
+  .enlarge-view svg{max-height:70vh}
+  .enlarge-view .donut{width:min(380px,60vw);height:min(380px,60vw)}
+  .enlarge-view .donut-legend{font-size:18px!important}
+  .enlarge-view .lc-title,.enlarge-view .bigchart-title{font-size:17px}
+  .enlarge-view .k-lbl{font-size:13px}
+  .enlarge-view .rejwrap5{height:56vh;gap:40px}
+  .enlarge-view .rbars{height:calc(56vh - 40px);gap:18px}
+  .enlarge-view .rb{width:72px}
+  .enlarge-view .rbv{font-size:14px;font-weight:700}
+  .enlarge-view .rhlab{font-size:15px}
+  .enlarge-view .legend{font-size:13px;margin-top:16px}
+
+  /* ---- Delete Data password dialog ---- */
+  .pw-modal{width:min(440px,92vw)!important;text-align:left;padding:26px 26px 22px}
+  .pw-modal .pw-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(239,68,68,.1);margin-bottom:12px}
+  .pw-modal h3{font-size:18px;font-weight:800;margin-bottom:8px}
+  .pw-modal p{color:var(--dim);font-size:13px;margin-bottom:16px}
+  .pw-modal label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .pw-modal input{width:100%;font-size:14px;padding:10px 12px;cursor:text}
+  .pw-status{min-height:20px;margin-top:8px;font-family:var(--mono);font-size:12px}
+  .pw-status.err{color:var(--bad)}.pw-status.ok{color:var(--good)}.pw-status.busy{color:var(--warn)}
+  .pw-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}
+  .pw-actions .delbtn{padding:9px 16px;font-size:13px}
+  .pw-actions .delbtn:disabled{opacity:.55;cursor:wait}
+
+  /* ---- Degraded Cells: editable thresholds ---- */
+  .thr-strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+  .thr-title{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .thr-inputs{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+  .thr{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:4px 6px 4px 10px;font-family:var(--mono);font-size:12px;color:var(--dim);transition:border-color .15s,background .15s}
+  .thr.changed{border-color:var(--accent);background:rgba(109,74,255,.07);color:var(--accent)}
+  .thr-name{font-weight:700;white-space:nowrap}
+  .thr input{width:70px;background:#fff;border:1px solid var(--line);border-radius:7px;padding:5px 7px;font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+  .thr input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,74,255,.15)}
+  .thr-unit{font-size:10.5px;color:var(--faint)}
+  .thr-reset{padding:6px 12px;font-size:12px}
+
+  /* ---- empty database page ---- */
+  .empty-state{max-width:560px;margin:60px auto;text-align:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:44px 36px;box-shadow:var(--shadow)}
+  .empty-state .big{font-size:44px;margin-bottom:10px}
+  .empty-state h2{font-size:22px;margin-bottom:10px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .empty-state p{color:var(--dim)}
+  /* Upload buttons are <label>s inside .controls -- keep the generic
+     ".controls label" caption style (tiny, faint, mono) off them. */
+  .controls label.dlbtn{color:#fff;font-family:var(--sans);font-size:13px;font-weight:650;letter-spacing:0;text-transform:none;margin-right:0}
+  .enlarge-view div:has(> .donut){justify-content:center;gap:64px}
+  .enlarge-view .bigchart-card svg{max-height:58vh}
+  /* Re-drawn enlarged charts (L2600 hourly) are sized for the pop-up
+     already -- a height cap would shrink them back down. */
+  .enlarge-view [data-enl-render] svg{max-height:none}
