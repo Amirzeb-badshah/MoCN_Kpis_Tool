@@ -391,6 +391,11 @@ def main():
     print(f"Serving the dashboard at {url}")
     print("Use the 'Upload Hourly Data' button in the header to ingest a new hourly file.")
     print("Press Ctrl+C to stop.")
+    # output/ is not in git -- on a fresh clone, build the dashboard (or
+    # the "No data yet" page, if the database is empty) before serving.
+    if not os.path.exists(os.path.join(OUTPUT_DIR, "network_insight_app.html")):
+        print("No dashboard built yet -- building it now...")
+        pipeline.rebuild()
     threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     app.run(host="0.0.0.0", port=port, debug=False)
 

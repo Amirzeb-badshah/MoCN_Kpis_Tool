@@ -167,6 +167,9 @@ def _migrate(conn):
     conn.commit()
 
 def init_db(path=DB_PATH):
+    # data/ is not in git (see .gitignore) -- a fresh clone has no folder
+    # for SQLite to create the database file in.
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     conn = sqlite3.connect(path)
     conn.executescript(SCHEMA.format(kpi_cols=kpi_cols_ddl()))
     _migrate(conn)
